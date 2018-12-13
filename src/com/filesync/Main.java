@@ -12,6 +12,7 @@ public class Main {
         } else if(args[0].equals("-c")){
             Client client = new Client("localhost", 4646);
             client.startClient();
+            System.exit(0);
         }
     }
 }

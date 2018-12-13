@@ -26,7 +26,8 @@ public class Client {
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
 
-            recieveFile(new File("./ClientFolder/redminimalist.jpg"));
+            recieveFile(new File("./ClientFolder/Test-file.txt"));
+            sendFile(new File("./ClientFolder/redminimalist.jpg"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -57,6 +58,9 @@ public class Client {
         }
         out.flush();
         fileInputStream.close();
+        System.out.println("File send successfully");
+
+        reinitConnection();
     }
     public void recieveFile(File file) throws IOException {
         byte[] buffer = new byte[socket.getReceiveBufferSize()];
@@ -69,7 +73,9 @@ public class Client {
         }
         fileOutputStream.flush();
         fileOutputStream.close();
+        System.out.println("File recieved successfully");
 
+        reinitConnection();
     }
     private void reinitConnection() throws IOException {
         stopClient();

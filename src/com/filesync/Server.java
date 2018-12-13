@@ -25,8 +25,11 @@ public class Server {
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
 
-            File file = new File("./ServerFolder/redminimalist.jpg");
-            sendFile(file);
+            File file1 = new File("./ServerFolder/Test-file.txt");
+            sendFile(file1);
+            File file2 = new File("./ServerFolder/redminimalist.jpg");
+            recieveFile(file2);
+            socket.close();
 
         }
     }
@@ -46,6 +49,9 @@ public class Server {
         }
         out.flush();
         fileInputStream.close();
+        System.out.println("File send successfully");
+
+        reinitConnection();
     }
     public void recieveFile(File file) throws IOException {
         byte[] buffer = new byte[socket.getReceiveBufferSize()];
@@ -58,6 +64,10 @@ public class Server {
         }
         fileOutputStream.flush();
         fileOutputStream.close();
+        System.out.println("File recieved successfully");
+
+
+        reinitConnection();
     }
     public void stopServer() {
         try {
