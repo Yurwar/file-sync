@@ -3,6 +3,7 @@ package com.filesync;
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 
 public class Server {
     private Socket socket;
@@ -11,6 +12,7 @@ public class Server {
     private ObjectOutputStream out;
     private final int PORT_NUMBER;
     private final String DIR_PATH = "./ServerFolder";
+    private final File MAIN_DIR = new File(DIR_PATH);
 
     public Server(int port_number) {
         this.PORT_NUMBER = port_number;
@@ -25,10 +27,20 @@ public class Server {
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
 
-            File file1 = new File("./ServerFolder/Test-file.txt");
-            sendFile(file1);
-            File file2 = new File("./ServerFolder/redminimalist.jpg");
-            recieveFile(file2);
+            DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
+            ArrayList<String> filesPaths = new ArrayList<>();
+            getAllFilesPaths(MAIN_DIR, filesPaths);
+
+            int amountOfFiles = filesPaths.size();
+            dout.write(amountOfFiles);
+            for(String filePath : filesPaths) {
+                dout.writeUTF(filePath);
+                dout.writeLong(new File(filePath).lastModified());
+                System.out.println(filePath);
+                System.out.println(new File(filePath).lastModified());
+            }
+
+
             socket.close();
 
         }
@@ -86,5 +98,23 @@ public class Server {
         socket = serverSocket.accept();
         out = new ObjectOutputStream(socket.getOutputStream());
         in = new ObjectInputStream(socket.getInputStream());
+    }
+    private ArrayList<String> getAllFilesPaths(File mainFolder, ArrayList<String> filesPaths) {
+        File[] folderEntries = mainFolder.listFiles();
+        for(File entry : folderEntries) {
+            if(entry.isDirectory()) {
+                getAllFilesPaths(entry, filesPaths);
+            } else {
+                filesPaths.add(entry.getPath());
+            }
+        }
+        return filesPaths;
+    }
+    private ArrayList<Long> getLastModified(ArrayList<String> filesPaths) {
+        ArrayList<Long> filesLastModified = new ArrayList<>();
+        for(String filePath : filesPaths) {
+            filesLastModified.add(new File(filePath).lastModified());
+        }
+        return filesLastModified;
     }
 }
