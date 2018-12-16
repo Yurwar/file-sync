@@ -27,6 +27,7 @@ public class Server {
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
 
+            DataInputStream din = new DataInputStream(socket.getInputStream());
             DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
             ArrayList<String> serverFilesPaths = new ArrayList<>();
             getAllFilesPaths(MAIN_DIR, serverFilesPaths);
@@ -39,6 +40,47 @@ public class Server {
                 System.out.println(filePath);
                 System.out.println(new File(filePath).lastModified());
             }
+
+            int pathsToSendSize = din.readInt();
+            int pathsToReceiveSize = din.readInt();
+            int pathsToDeleteSize = din.readInt();
+            System.out.println(pathsToSendSize + " " + pathsToReceiveSize + " " + pathsToDeleteSize);
+            ArrayList<String> clientFilesPathsToSend = new ArrayList<>(pathsToSendSize);
+            ArrayList<String> clientFilesPathsToReceive = new ArrayList<>(pathsToReceiveSize);
+            ArrayList<String> serverFilesPathsToDelete = new ArrayList<>(pathsToDeleteSize);
+            System.out.println(clientFilesPathsToSend.size());
+            System.out.println("Client files paths to send: ");
+            for(int i = 0; i < pathsToSendSize; i++) {
+                clientFilesPathsToSend.add(i, din.readUTF());
+                //tmp String path converter
+                String tmpPath = clientFilesPathsToSend.get(i).replaceAll("Client", "Server");
+                clientFilesPathsToSend.set(i, tmpPath);
+                //
+                System.out.println(clientFilesPathsToSend.get(i));
+
+            }
+
+            System.out.println("Client files paths to receive: ");
+            for(int i = 0; i < pathsToReceiveSize; i++) {
+                clientFilesPathsToReceive.add(i, din.readUTF());
+                //tmp String path converter
+                String tmpPath = clientFilesPathsToReceive.get(i).replaceAll("Client", "Server");
+                clientFilesPathsToReceive.set(i, tmpPath);
+                //
+                System.out.println(clientFilesPathsToReceive.get(i));
+            }
+
+            System.out.println("Server files paths to delete: ");
+            for(int i = 0; i < pathsToDeleteSize; i++) {
+                serverFilesPathsToDelete.add(i, din.readUTF());
+                //tmp String path converter
+                String tmpPath = serverFilesPathsToDelete.get(i).replaceAll("Client", "Server");
+                serverFilesPathsToDelete.set(i, tmpPath);
+                //
+                System.out.println(serverFilesPathsToDelete.get(i));
+            }
+
+            deleteFiles(serverFilesPathsToDelete);
 
 
             socket.close();
@@ -116,4 +158,14 @@ public class Server {
         }
         return filesLastModified;
     }
+    private void deleteFiles(ArrayList<String> filesPathsToDelete) {
+        File fileToDelete;
+        for(String filePath : filesPathsToDelete) {
+            fileToDelete = new File(filePath);
+            if(!fileToDelete.delete()) {
+                System.out.println("Can't delete file " + filePath);
+            }
+        }
+    }
+
 }

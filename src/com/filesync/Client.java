@@ -30,6 +30,7 @@ public class Client {
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
 
+            DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
             DataInputStream din = new DataInputStream(socket.getInputStream());
             int amountOfFiles = din.read();
             System.out.println(amountOfFiles);
@@ -85,8 +86,8 @@ public class Client {
                 System.out.println(fileToReceive);
             }
             */
-            ArrayList<String> serverFilesToDelete = new ArrayList<>();
-            checkToUpdateFromUser(clientNotExistingFilesPaths, clientFilesPathsToReceive, serverFilesToDelete);
+            ArrayList<String> serverFilesPathsToDelete = new ArrayList<>();
+            checkToUpdateFromUser(clientNotExistingFilesPaths, clientFilesPathsToReceive, serverFilesPathsToDelete);
 
 //            System.out.println("Checking not existing files");
 //            System.out.println("Files to delete from server");
@@ -100,6 +101,18 @@ public class Client {
 
             createMissingFolders(clientFilesPathsToReceive);
 
+            dout.writeInt(clientFilesPathsToSend.size());
+            dout.writeInt(clientFilesPathsToReceive.size());
+            dout.writeInt(serverFilesPathsToDelete.size());
+            for(String filePath : clientFilesPathsToSend) {
+                dout.writeUTF(filePath);
+            }
+            for(String filePath : clientFilesPathsToReceive) {
+                dout.writeUTF(filePath);
+            }
+            for(String filePath : serverFilesPathsToDelete) {
+                dout.writeUTF(filePath);
+            }
 
 
         } catch (IOException e) {
