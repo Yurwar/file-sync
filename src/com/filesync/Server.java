@@ -81,7 +81,12 @@ public class Server {
             }
 
             deleteFiles(serverFilesPathsToDelete);
-
+            for(String fileToReceive : clientFilesPathsToSend) {
+                receiveFile(new File(fileToReceive));
+            }
+            for(String fileToSend : clientFilesPathsToReceive) {
+                sendFile(new File(fileToSend));
+            }
 
             socket.close();
         }
@@ -106,7 +111,7 @@ public class Server {
 
         reinitConnection();
     }
-    public void recieveFile(File file) throws IOException {
+    public void receiveFile(File file) throws IOException {
         byte[] buffer = new byte[socket.getReceiveBufferSize()];
         OutputStream fileOutputStream = new FileOutputStream(file);
 
@@ -117,7 +122,7 @@ public class Server {
         }
         fileOutputStream.flush();
         fileOutputStream.close();
-        System.out.println("File recieved successfully");
+        System.out.println("File received successfully");
 
 
         reinitConnection();

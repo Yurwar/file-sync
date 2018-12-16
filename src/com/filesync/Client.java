@@ -71,7 +71,7 @@ public class Client {
                     clientFilesPathsToReceive.add(clientFilesPaths.get(i));
                 }
             }
-            /*
+
             System.out.println("Not existing files on client:");
             for(String notExistingFile : clientNotExistingFilesPaths) {
                 System.out.println(notExistingFile);
@@ -81,23 +81,18 @@ public class Client {
                 System.out.println(fileToSend);
             }
 
-            System.out.println("Files to receive from server");
-            for (String fileToReceive : clientFilesPathsToReceive) {
-                System.out.println(fileToReceive);
-            }
-            */
             ArrayList<String> serverFilesPathsToDelete = new ArrayList<>();
             checkToUpdateFromUser(clientNotExistingFilesPaths, clientFilesPathsToReceive, serverFilesPathsToDelete);
 
-//            System.out.println("Checking not existing files");
-//            System.out.println("Files to delete from server");
-//            for(String fileToDelete : serverFilesToDelete) {
-//                System.out.println(fileToDelete);
-//            }
-//            System.out.println("Files to receive to client");
-//            for(String fileToReceive : clientFilesPathsToReceive) {
-//                System.out.println(fileToReceive);
-//            }
+            System.out.println("Checking not existing files");
+            System.out.println("Files to delete from server");
+            for(String fileToDelete : serverFilesPathsToDelete) {
+                System.out.println(fileToDelete);
+            }
+            System.out.println("Files to receive to client");
+            for(String fileToReceive : clientFilesPathsToReceive) {
+                System.out.println(fileToReceive);
+            }
 
             createMissingFolders(clientFilesPathsToReceive);
 
@@ -114,6 +109,12 @@ public class Client {
                 dout.writeUTF(filePath);
             }
 
+            for(String fileToSend : clientFilesPathsToSend) {
+                sendFile(new File(fileToSend));
+            }
+            for(String fileToReceive : clientFilesPathsToReceive) {
+                receiveFile(new File(fileToReceive));
+            }
 
         } catch (IOException e) {
             e.printStackTrace();
