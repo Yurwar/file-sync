@@ -1,6 +1,5 @@
 package com.filesync;
 
-
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
@@ -11,11 +10,13 @@ public class Server {
     private ObjectInputStream in;
     private ObjectOutputStream out;
     private final int PORT_NUMBER;
-    private final String DIR_PATH = "./ServerFolder";
-    private final File MAIN_DIR = new File(DIR_PATH);
+    private final String DIR_PATH;
+    private final File MAIN_DIR;
 
-    public Server(int port_number) {
+    public Server(int port_number, String dir_path) {
         this.PORT_NUMBER = port_number;
+        this.DIR_PATH = dir_path;
+        this.MAIN_DIR = new File(DIR_PATH);
     }
 
     public void startServer() throws IOException {
@@ -81,19 +82,20 @@ public class Server {
             }
 
             deleteFiles(serverFilesPathsToDelete);
+            createMissingFolders(clientFilesPathsToSend);
             for(String fileToReceive : clientFilesPathsToSend) {
-                receiveFile(new File(fileToReceive));
+                if(clientFilesPathsToSend.size() > 0) {
+                    receiveFile(new File(fileToReceive));
+                }
             }
             for(String fileToSend : clientFilesPathsToReceive) {
-                sendFile(new File(fileToSend));
+                if(clientFilesPathsToReceive.size() > 0) {
+                    sendFile(new File(fileToSend));
+                }
             }
 
             socket.close();
         }
-    }
-    public void sendFile(String pathToFile) throws IOException {
-        File file = new File("pathToFile");
-        sendFile(file);
     }
 
     public void sendFile(File file) throws IOException {
@@ -169,6 +171,16 @@ public class Server {
             fileToDelete = new File(filePath);
             if(!fileToDelete.delete()) {
                 System.out.println("Can't delete file " + filePath);
+            }
+        }
+    }
+    private void createMissingFolders(ArrayList<String> filesToReceive) {
+        String folderPath;
+        for(String fileToRecieve : filesToReceive) {
+            folderPath = fileToRecieve.substring(0, fileToRecieve.lastIndexOf("/"));
+            File folder = new File(folderPath);
+            if(!folder.exists()) {
+                folder.mkdirs();
             }
         }
     }

@@ -12,13 +12,15 @@ public class Client {
     private Socket socket;
     private ObjectOutputStream out;
     private ObjectInputStream in;
-    private final String DIR_PATH = "./ClientFolder";
-    private final File MAIN_DIR = new File(DIR_PATH);
+    private final String DIR_PATH;
+    private final File MAIN_DIR;
 
 
-    public Client(String serverAddr, int port_number) {
+    public Client(String serverAddr, int port_number, String dir_path) {
         this.serverAddr = serverAddr;
         this.PORT_NUMBER = port_number;
+        this.DIR_PATH = dir_path;
+        this.MAIN_DIR = new File(DIR_PATH);
     }
 
     public void startClient() {
@@ -69,6 +71,8 @@ public class Client {
                     clientFilesPathsToSend.add(clientFilesPaths.get(i));
                 } else if (clientFilesLastModified.get(i) < serverFilesLastModified.get(i)) {
                     clientFilesPathsToReceive.add(clientFilesPaths.get(i));
+                } else if (clientFilesLastModified.get(i) == serverFilesLastModified.get(i)) {
+                    continue;
                 }
             }
 
@@ -94,7 +98,14 @@ public class Client {
                 System.out.println(fileToReceive);
             }
 
+
+
             createMissingFolders(clientFilesPathsToReceive);
+            addMissingClientFiles(clientFilesPathsToSend, clientFilesPathsToReceive);
+            System.out.println("Files to send to server");
+            for (String fileToSend : clientFilesPathsToSend) {
+                System.out.println(fileToSend);
+            }
 
             dout.writeInt(clientFilesPathsToSend.size());
             dout.writeInt(clientFilesPathsToReceive.size());
@@ -110,10 +121,15 @@ public class Client {
             }
 
             for(String fileToSend : clientFilesPathsToSend) {
-                sendFile(new File(fileToSend));
+                if(clientFilesPathsToSend.size() > 0) {
+                    sendFile(new File(fileToSend));
+                }
             }
             for(String fileToReceive : clientFilesPathsToReceive) {
-                receiveFile(new File(fileToReceive));
+                if(clientFilesPathsToReceive.size() > 0) {
+                    receiveFile(new File(fileToReceive));
+                }
+
             }
 
         } catch (IOException e) {
@@ -231,6 +247,28 @@ public class Client {
             File folder = new File(folderPath);
             if(!folder.exists()) {
                 folder.mkdirs();
+            }
+        }
+    }
+
+    private void getAllFilesPaths(File mainFolder, ArrayList<String> filesPaths) {
+        File[] folderEntries = mainFolder.listFiles();
+        for(File entry : folderEntries) {
+            if(entry.isDirectory()) {
+                getAllFilesPaths(entry, filesPaths);
+            } else {
+                filesPaths.add(entry.getPath());
+            }
+        }
+    }
+
+    private void addMissingClientFiles(ArrayList<String> clientFilesPathsToSend,
+                                       ArrayList<String> clientFilesPathsToReceive) {
+        ArrayList<String> allFilesPaths = new ArrayList<>();
+        getAllFilesPaths(MAIN_DIR, allFilesPaths);
+        for (String filePath : allFilesPaths) {
+            if (!clientFilesPathsToSend.contains(filePath) && !clientFilesPathsToReceive.contains(filePath)) {
+                clientFilesPathsToSend.add(filePath);
             }
         }
     }
