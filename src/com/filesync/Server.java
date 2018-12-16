@@ -28,12 +28,12 @@ public class Server {
             in = new ObjectInputStream(socket.getInputStream());
 
             DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
-            ArrayList<String> filesPaths = new ArrayList<>();
-            getAllFilesPaths(MAIN_DIR, filesPaths);
+            ArrayList<String> serverFilesPaths = new ArrayList<>();
+            getAllFilesPaths(MAIN_DIR, serverFilesPaths);
 
-            int amountOfFiles = filesPaths.size();
+            int amountOfFiles = serverFilesPaths.size();
             dout.write(amountOfFiles);
-            for(String filePath : filesPaths) {
+            for(String filePath : serverFilesPaths) {
                 dout.writeUTF(filePath);
                 dout.writeLong(new File(filePath).lastModified());
                 System.out.println(filePath);
@@ -42,7 +42,6 @@ public class Server {
 
 
             socket.close();
-
         }
     }
     public void sendFile(String pathToFile) throws IOException {

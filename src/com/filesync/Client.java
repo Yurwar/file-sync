@@ -3,6 +3,8 @@ package com.filesync;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Scanner;
 
 public class Client {
     private String serverAddr;
@@ -35,6 +37,7 @@ public class Client {
             ArrayList<String> serverFilesPaths = new ArrayList<>(amountOfFiles);
             ArrayList<String> clientFilesPaths = new ArrayList<>();
             ArrayList<Long> serverFilesLastModified = new ArrayList<>(amountOfFiles);
+            ArrayList<Long> clientFilesLastModified = new ArrayList<>();
             for (int i = 0; i < amountOfFiles; i++) {
                 serverFilesPaths.add(i, din.readUTF());
                 serverFilesLastModified.add(i, din.readLong());
@@ -43,11 +46,60 @@ public class Client {
                 //
                 clientFilesPaths.add(tmpPath);
             }
+            for(String clientFilePath : clientFilesPaths) {
+                clientFilesLastModified.add(new File(clientFilePath).lastModified());
+            }
+            /* Debug
             for (int i = 0; i < serverFilesPaths.size(); i++) {
                 System.out.println(serverFilesPaths.get(i));
                 System.out.println(clientFilesPaths.get(i));
                 System.out.println(serverFilesLastModified.get(i));
+                System.out.println(clientFilesLastModified.get(i));
             }
+            */
+            //Checking for update
+            ArrayList<String> clientNotExistingFilesPaths = new ArrayList<>();
+            ArrayList<String> clientFilesPathsToReceive = new ArrayList<>();
+            ArrayList<String> clientFilesPathsToSend = new ArrayList<>();
+            for(int i = 0; i < serverFilesPaths.size(); i++) {
+                if(clientFilesLastModified.get(i) == 0) {
+                    clientNotExistingFilesPaths.add(clientFilesPaths.get(i));
+                } else if (clientFilesLastModified.get(i) > serverFilesLastModified.get(i)) {
+                    clientFilesPathsToSend.add(clientFilesPaths.get(i));
+                } else if (clientFilesLastModified.get(i) < serverFilesLastModified.get(i)) {
+                    clientFilesPathsToReceive.add(clientFilesPaths.get(i));
+                }
+            }
+            /*
+            System.out.println("Not existing files on client:");
+            for(String notExistingFile : clientNotExistingFilesPaths) {
+                System.out.println(notExistingFile);
+            }
+            System.out.println("Files to send to server");
+            for (String fileToSend : clientFilesPathsToSend) {
+                System.out.println(fileToSend);
+            }
+
+            System.out.println("Files to receive from server");
+            for (String fileToReceive : clientFilesPathsToReceive) {
+                System.out.println(fileToReceive);
+            }
+            */
+            ArrayList<String> serverFilesToDelete = new ArrayList<>();
+            checkToUpdateFromUser(clientNotExistingFilesPaths, clientFilesPathsToReceive, serverFilesToDelete);
+
+//            System.out.println("Checking not existing files");
+//            System.out.println("Files to delete from server");
+//            for(String fileToDelete : serverFilesToDelete) {
+//                System.out.println(fileToDelete);
+//            }
+//            System.out.println("Files to receive to client");
+//            for(String fileToReceive : clientFilesPathsToReceive) {
+//                System.out.println(fileToReceive);
+//            }
+
+            createMissingFolders(clientFilesPathsToReceive);
+
 
 
         } catch (IOException e) {
@@ -86,7 +138,7 @@ public class Client {
         reinitConnection();
     }
 
-    public void recieveFile(File file) throws IOException {
+    public void receiveFile(File file) throws IOException {
         byte[] buffer = new byte[socket.getReceiveBufferSize()];
         OutputStream fileOutputStream = new FileOutputStream(file);
 
@@ -97,7 +149,7 @@ public class Client {
         }
         fileOutputStream.flush();
         fileOutputStream.close();
-        System.out.println("File recieved successfully");
+        System.out.println("File received successfully");
 
         reinitConnection();
     }
@@ -135,5 +187,37 @@ public class Client {
             filesLastModified.add(new File(filePath).lastModified());
         }
         return filesLastModified;
+    }
+    private void checkToUpdateFromUser(ArrayList<String> clientNotExistingFiles,
+                                         ArrayList<String> filesToReceiveFromServer,
+                                         ArrayList<String> filesToDeleteFromServer) {
+        if(clientNotExistingFiles.isEmpty()) {
+            return;
+        }
+        Iterator<String> it = clientNotExistingFiles.iterator();
+        String condition;
+        String filePath;
+        while(it.hasNext()) {
+            filePath = it.next();
+            System.out.println("File " + filePath + " is existing on server, but not on a client\n"
+                    + "Delete it from server, receive to client or do nothing(d/r/N)");
+            Scanner sc = new Scanner(System.in);
+            condition = sc.nextLine();
+            if(condition.equalsIgnoreCase("d")) {
+                filesToDeleteFromServer.add(filePath);
+            } else if(condition.equalsIgnoreCase("r")) {
+                filesToReceiveFromServer.add(filePath);
+            }
+        }
+    }
+    private void createMissingFolders(ArrayList<String> filesToReceive) {
+        String folderPath;
+        for(String fileToRecieve : filesToReceive) {
+            folderPath = fileToRecieve.substring(0, fileToRecieve.lastIndexOf("/"));
+            File folder = new File(folderPath);
+            if(!folder.exists()) {
+                folder.mkdirs();
+            }
+        }
     }
 }
