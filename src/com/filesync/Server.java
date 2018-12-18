@@ -90,8 +90,6 @@ public class Server {
                 if(clientFilesPathsToSend.size() > 0) {
                     File fileToReceive = new File(fileToReceivePath);
                     receiveFile(fileToReceive);
-//                    long lastModified = din.readLong();
-//                    fileToReceive.setLastModified(lastModified);
                 }
             }
 
@@ -99,7 +97,6 @@ public class Server {
                 if(clientFilesPathsToReceive.size() > 0) {
                     File fileToSend = new File(fileToSendPath);
                     sendFile(fileToSend);
-//                    dout.writeLong(fileToSend.lastModified());
                 }
             }
             for(String fileToReceive : clientFilesPathsToSend) {
@@ -111,16 +108,13 @@ public class Server {
                 }
             }
             for(String fileToSend : clientFilesPathsToReceive) {
-                if(clientFilesPathsToSend.size() > 0) {
+                if(clientFilesPathsToReceive.size() > 0) {
                     File file = new File(fileToSend);
                     long lastModified = file.lastModified();
                     dout = new DataOutputStream(socket.getOutputStream());
                     dout.writeLong(lastModified);
                 }
             }
-
-//            File file = new File("./Test-file.txt");
-//            file.setLastModified(din.readLong());
 
             socket.close();
         }

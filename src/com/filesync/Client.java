@@ -3,16 +3,15 @@ package com.filesync;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
-import java.util.Date;
 
 public class Client {
     private String serverAddr;
-    private final int PORT_NUMBER;
     private Socket socket;
     private ObjectOutputStream out;
     private ObjectInputStream in;
     private DataOutputStream dout;
     private DataInputStream din;
+    private final int PORT_NUMBER;
     private final String DIR_PATH;
     private final File MAIN_DIR;
 
@@ -146,7 +145,6 @@ public class Client {
                 if (clientFilesPathsToSend.size() > 0) {
                     File fileToSend = new File(fileToSendPath);
                     sendFile(fileToSend);
-//                    dout.writeLong(fileToSend.lastModified());
 
                 }
             }
@@ -154,8 +152,6 @@ public class Client {
                 if (clientFilesPathsToReceive.size() > 0) {
                     File fileToReceive = new File(fileToReceivePath);
                     receiveFile(fileToReceive);
-//                    long lastModified = din.readLong();
-//                    fileToReceive.setLastModified(lastModified);
                 }
             }
             for(String fileToSendPath : clientFilesPathsToSend) {
