@@ -9,13 +9,13 @@ import java.util.Iterator;
 import java.util.Scanner;
 
 public class FileOperation {
-//    private final DataOutputStream dataOutputStream;
-//    private final DataInputStream dataInputStream;
+    private final DataOutputStream dataOutputStream;
+    private final DataInputStream dataInputStream;
 
-//    public FileOperation(DataOutputStream dataOutputStream, DataInputStream dataInputStream) {
-//        this.dataOutputStream = dataOutputStream;
-//        this.dataInputStream = dataInputStream;
-//    }
+    public FileOperation(DataOutputStream dataOutputStream, DataInputStream dataInputStream) {
+        this.dataOutputStream = dataOutputStream;
+        this.dataInputStream = dataInputStream;
+    }
 
     public void checkToUpdateFromUser(ArrayList<String> clientNotExistingFiles,
                                       ArrayList<String> filesToReceiveFromServer,
@@ -68,17 +68,21 @@ public class FileOperation {
         return filesPaths;
     }
 
-    public void addMissingClientFiles(File folderPath, ArrayList<String> clientFilesPathsToSend,
-                                      ArrayList<String> clientFilesPathsToReceive) {
+    public void addMissingClientFiles(File folderPath,
+                                      ArrayList<String> clientFilesPathsToSend,
+                                      ArrayList<String> clientFilesPathsToReceive,
+                                      ArrayList<String> upToDateFilesPaths) {
         ArrayList<String> allFilesPaths = getAllFilesPaths(folderPath);
         for (String filePath : allFilesPaths) {
-            if (!clientFilesPathsToSend.contains(filePath) && !clientFilesPathsToReceive.contains(filePath)) {
+            if (!clientFilesPathsToSend.contains(filePath)
+                    && !clientFilesPathsToReceive.contains(filePath)
+                    && !upToDateFilesPaths.contains(filePath)) {
                 clientFilesPathsToSend.add(filePath);
             }
         }
     }
 
-    public void sendPathsArray(ArrayList<String> pathsArray, DataOutputStream dataOutputStream) {
+    public void sendPathsArray(ArrayList<String> pathsArray) {
         if(!pathsArray.isEmpty()) {
             for (String path : pathsArray) {
                 try {
@@ -90,7 +94,7 @@ public class FileOperation {
         }
     }
 
-    public ArrayList<String> receivePathsArray(int arraySize, DataInputStream dataInputStream) {
+    public ArrayList<String> receivePathsArray(int arraySize) {
             ArrayList<String> pathsArray = new ArrayList<>(arraySize);
             for (int i = 0; i < arraySize; i++) {
                 try {
@@ -144,5 +148,34 @@ public class FileOperation {
             }
         }
         return filesPathsToReceive;
+    }
+
+    public ArrayList<String> getUpToDateFilesPaths(ArrayList<String> filesPaths,
+                                                   ArrayList<Long> senderFilesLastModified,
+                                                   ArrayList<Long> receiverFilesLastModified) {
+        ArrayList<String> upToDateFilesPaths = new ArrayList<>();
+        for(int i = 0; i < filesPaths.size(); i++) {
+            if(senderFilesLastModified.get(i).equals(receiverFilesLastModified.get(i))) {
+                upToDateFilesPaths.add(filesPaths.get(i));
+            }
+        }
+        return upToDateFilesPaths;
+    }
+
+    public void printArray(ArrayList arrayList) {
+        if(arrayList.size() > 0) {
+            for (Object o : arrayList) {
+                System.out.println(o);
+            }
+        }
+    }
+
+    public void printArray(ArrayList arrayList, String msg) {
+        if(arrayList.size() > 0) {
+            System.out.println(msg);
+            for (Object o : arrayList) {
+                System.out.println(o);
+            }
+        }
     }
 }

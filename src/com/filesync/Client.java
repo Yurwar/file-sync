@@ -6,12 +6,12 @@ import java.util.ArrayList;
 
 public class Client {
     private String serverAddr;
-    private final int PORT_NUMBER;
     private Socket socket;
     private ObjectOutputStream out;
     private ObjectInputStream in;
     private DataOutputStream dout;
     private DataInputStream din;
+    private final int PORT_NUMBER;
     private final String DIR_PATH;
     private final File MAIN_DIR;
 
@@ -21,34 +21,31 @@ public class Client {
         this.PORT_NUMBER = port_number;
         this.DIR_PATH = dir_path;
         this.MAIN_DIR = new File(DIR_PATH);
-    }
-
-    public void startClient() {
         try {
             socket = new Socket(serverAddr, PORT_NUMBER);
             if (socket.isConnected()) {
-                System.out.println("Connected");
+                System.out.println("Connected to server on address " + socket.getInetAddress() + ":" + socket.getPort());
             }
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
-
             dout = new DataOutputStream(socket.getOutputStream());
             din = new DataInputStream(socket.getInputStream());
-            FileOperation fileOperation = new FileOperation(/*dout, din*/);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public void sync() {
+        try {
+            FileOperation fileOperation = new FileOperation(dout, din);
 
             int amountOfFiles = din.read();
-//DONE
-            System.out.println("Amount of files on server: " + amountOfFiles);
 
-            ArrayList<String> serverFilesPaths = fileOperation.receivePathsArray(amountOfFiles, din);
+//            System.out.println("Amount of files on server: " + amountOfFiles);
+
+            ArrayList<String> serverFilesPaths = fileOperation.receivePathsArray(amountOfFiles);
             ArrayList<String> clientFilesPaths = new ArrayList<>();
             ArrayList<Long> serverFilesLastModified = new ArrayList<>(amountOfFiles);
             ArrayList<Long> clientFilesLastModified = new ArrayList<>();
-//DONE
-            System.out.println("Files paths on server: ");
-            for(String filePath : serverFilesPaths) {
-                System.out.println(filePath);
-            }
 
             for (int i = 0; i < amountOfFiles; i++) {
                 serverFilesLastModified.add(i, din.readLong());
@@ -58,118 +55,166 @@ public class Client {
                 clientFilesPaths.add(tmpPath);
             }
 
-            System.out.println("Files paths on client: ");
-            for(String filePath : clientFilesPaths) {
-                System.out.println(filePath);
-            }
 
-
-            for(String clientFilePath : clientFilesPaths) {
+            for (String clientFilePath : clientFilesPaths) {
                 clientFilesLastModified.add(new File(clientFilePath).lastModified());
             }
 
-            System.out.println("Files paths last modified client: ");
-            for(Long lastModified : clientFilesLastModified) {
-                System.out.println(lastModified);
-            }
+//            System.out.println("Files paths last modified client: ");
+//            for (Long lastModified : clientFilesLastModified) {
+//                System.out.println(lastModified);
+//            }
+//            System.out.println("Files paths last modified server: ");
+//            for (Long lastModified : serverFilesLastModified) {
+//                System.out.println(lastModified);
+//            }
 
             //Checking for update
             ArrayList<String> clientNotExistingFilesPaths = fileOperation.getNotExistingFilesPaths(clientFilesPaths,
                     clientFilesLastModified);
 
-            System.out.println("Not existing files on client:");
-            for(String notExistingFile : clientNotExistingFilesPaths) {
-                System.out.println(notExistingFile);
-            }
+//            System.out.println("Not existing files on client:");
+//            for (String notExistingFile : clientNotExistingFilesPaths) {
+//                System.out.println(notExistingFile);
+//            }
 
             ArrayList<String> clientFilesPathsToSend = fileOperation.getFilesPathsToSend(clientFilesPaths,
                     clientFilesLastModified,
                     serverFilesLastModified);
 
-            System.out.println("Files to send to server");
-            for (String fileToSend : clientFilesPathsToSend) {
-                System.out.println(fileToSend);
-            }
+//            System.out.println("Files to send to server");
+//            for (String fileToSend : clientFilesPathsToSend) {
+//                System.out.println(fileToSend);
+//            }
 
             ArrayList<String> clientFilesPathsToReceive = fileOperation.getFilesPathsToReceive(clientFilesPaths,
                     clientFilesLastModified,
                     serverFilesLastModified);
 
-            System.out.println("Client files paths to receive: ");
-            for(String filePath : clientFilesPathsToReceive) {
-                System.out.println(filePath);
-            }
+//            System.out.println("Client files paths to receive: ");
+//            for (String filePath : clientFilesPathsToReceive) {
+//                System.out.println(filePath);
+//            }
 
+            ArrayList<String> upToDateFilesPaths = fileOperation.getUpToDateFilesPaths(clientFilesPaths,
+                    clientFilesLastModified,
+                    serverFilesLastModified);
+
+//            System.out.println("Up-To-Date files: ");
+//            for (String filePath : upToDateFilesPaths) {
+//                System.out.println(filePath);
+//            }
 
             ArrayList<String> serverFilesPathsToDelete = new ArrayList<>();
             fileOperation.checkToUpdateFromUser(clientNotExistingFilesPaths, clientFilesPathsToReceive, serverFilesPathsToDelete);
 
-            System.out.println("Checking not existing files");
-            System.out.println("Files to delete from server");
-            for(String fileToDelete : serverFilesPathsToDelete) {
-                System.out.println(fileToDelete);
-            }
-            System.out.println("Files to receive to client");
-            for(String fileToReceive : clientFilesPathsToReceive) {
-                System.out.println(fileToReceive);
-            }
+//            System.out.println("Checking not existing files");
+//            System.out.println("Files to delete from server");
+//            for (String fileToDelete : serverFilesPathsToDelete) {
+//                System.out.println(fileToDelete);
+//            }
+//            System.out.println("Files to receive to client");
+//            for (String fileToReceive : clientFilesPathsToReceive) {
+//                System.out.println(fileToReceive);
+//            }
 
             fileOperation.createMissingFolders(clientFilesPathsToReceive);
-            fileOperation.addMissingClientFiles(MAIN_DIR, clientFilesPathsToSend, clientFilesPathsToReceive);
-
-
-
+            fileOperation.addMissingClientFiles(MAIN_DIR, clientFilesPathsToSend, clientFilesPathsToReceive, upToDateFilesPaths);
 
             dout.writeInt(clientFilesPathsToSend.size());
             dout.writeInt(clientFilesPathsToReceive.size());
             dout.writeInt(serverFilesPathsToDelete.size());
-            fileOperation.sendPathsArray(clientFilesPathsToSend, dout);
-            fileOperation.sendPathsArray(clientFilesPathsToReceive, dout);
-            fileOperation.sendPathsArray(serverFilesPathsToDelete, dout);
-            System.out.println("Files to send to server");
-            for (String fileToSend : clientFilesPathsToSend) {
-                System.out.println(fileToSend);
+            fileOperation.sendPathsArray(clientFilesPathsToSend);
+            fileOperation.sendPathsArray(clientFilesPathsToReceive);
+            fileOperation.sendPathsArray(serverFilesPathsToDelete);
+//            System.out.println("Files to send to server");
+//            for (String fileToSend : clientFilesPathsToSend) {
+//                System.out.println(fileToSend);
+//            }
+//            System.out.println("Files paths to receive: ");
+//            for (String filePath : clientFilesPathsToReceive) {
+//                System.out.println(filePath);
+//            }
+//            System.out.println("Files paths to delete: ");
+//            for (String filePath : serverFilesPathsToDelete) {
+//                System.out.println(filePath);
+//            }
+
+            if(clientFilesPathsToSend.size() == 0 && clientFilesPathsToReceive.size() == 0) {
+                System.out.println("All files is up-to-date");
             }
-            System.out.println("Files paths to receive: ");
-            for(String filePath : clientFilesPathsToReceive) {
-                System.out.println(filePath);
-            }
-            System.out.println("Files paths to delete: ");
-            for(String filePath : serverFilesPathsToDelete) {
-                System.out.println(filePath);
-            }
-            for(String fileToSend : clientFilesPathsToSend) {
-                if(clientFilesPathsToSend.size() > 0) {
-                    sendFile(new File(fileToSend));
+
+            for (String fileToSendPath : clientFilesPathsToSend) {
+                if (clientFilesPathsToSend.size() > 0) {
+                    File fileToSend = new File(fileToSendPath);
+                    sendFile(fileToSend);
                 }
             }
-            for(String fileToReceive : clientFilesPathsToReceive) {
+            for (String fileToReceivePath : clientFilesPathsToReceive) {
+                if (clientFilesPathsToReceive.size() > 0) {
+                    File fileToReceive = new File(fileToReceivePath);
+                    receiveFile(fileToReceive);
+                }
+            }
+            for(String fileToSendPath : clientFilesPathsToSend) {
+                if (clientFilesPathsToSend.size() > 0) {
+                    File file = new File(fileToSendPath);
+                    long lastModified = file.lastModified();
+                    dout = new DataOutputStream(socket.getOutputStream());
+                    dout.writeLong(lastModified);
+                }
+            }
+            for(String fileToReceivePath : clientFilesPathsToReceive) {
                 if(clientFilesPathsToReceive.size() > 0) {
-                    receiveFile(new File(fileToReceive));
+                    File file = new File(fileToReceivePath);
+                    din = new DataInputStream(socket.getInputStream());
+                    long lastModified = din.readLong();
+                    file.setLastModified(lastModified);
                 }
-
             }
 
+            System.out.println("Synchronization completed successfully");
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            try {
-                out.close();
-                in.close();
-                dout.close();
-                din.close();
-                socket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            stopClient();
+        }
+    }
+    //TODO: Path converter from full or relative sender file path to full receiver file path
+    public String convertPath(String senderPath) {
+        String folderToSyncName;
+        System.out.println(DIR_PATH);
+        if(DIR_PATH.lastIndexOf("/") == DIR_PATH.length() - 1) {
+            folderToSyncName = DIR_PATH.substring(DIR_PATH.lastIndexOf("/", DIR_PATH.length() - 2) + 1, DIR_PATH.lastIndexOf("/"));
+            System.out.println(folderToSyncName);
+        } else {
+            folderToSyncName = DIR_PATH.substring(DIR_PATH.lastIndexOf("/") + 1, DIR_PATH.length());
+            System.out.println(folderToSyncName);
+        }
+        if(senderPath.charAt(0) == '.') {
+            if(DIR_PATH.charAt(0) == '.') {
+                return senderPath;
+            } else {
+                String[] dirPathArr = DIR_PATH.split("/");
+                int arrIndex;
+                for (int i = 0; i < dirPathArr.length; i++) {
+                    String path = dirPathArr[i];
+                    if (path.equals(folderToSyncName)) {
+                        arrIndex = i;
+                    }
+                }
             }
         }
+        return folderToSyncName;
     }
 
     public void stopClient() {
         try {
+            socket.close();
             in.close();
             out.close();
-            socket.close();
+            din.close();
+            dout.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -188,14 +233,15 @@ public class Client {
                 }
                 out.flush();
                 fileInputStream.close();
-                System.out.println("File send successfully");
 
-                reinitConnection();
+                System.out.println("File " + file.toString() + " send successfully");
             } else {
                 throw new FileNotFoundException();
             }
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            reconnect();
         }
     }
 
@@ -211,29 +257,27 @@ public class Client {
             }
             fileOutputStream.flush();
             fileOutputStream.close();
-            System.out.println("File received successfully");
 
-            reinitConnection();
+            System.out.println("File " + file.toString() + " received successfully");
         } catch (IOException e) {
             e.printStackTrace();
-        } /*finally {
-            try {
-                socket.close();
-                out.close();
-                in.close();
-                socket = new Socket(serverAddr, PORT_NUMBER);
-                out = new ObjectOutputStream(socket.getOutputStream());
-                in = new ObjectInputStream(socket.getInputStream());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }*/
+        } finally {
+            reconnect();
+        }
     }
 
-    private void reinitConnection() throws IOException {
-        stopClient();
-        socket = new Socket(serverAddr, PORT_NUMBER);
-        out = new ObjectOutputStream(socket.getOutputStream());
-        in = new ObjectInputStream(socket.getInputStream());
+    private void reconnect() {
+        try {
+            socket.close();
+            out.close();
+            in.close();
+            socket = new Socket(serverAddr, PORT_NUMBER);
+            out = new ObjectOutputStream(socket.getOutputStream());
+            in = new ObjectInputStream(socket.getInputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+
+
 }
