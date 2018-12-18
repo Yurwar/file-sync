@@ -9,6 +9,8 @@ public class Server {
     private ServerSocket serverSocket;
     private ObjectInputStream in;
     private ObjectOutputStream out;
+    private DataInputStream din;
+    private DataOutputStream dout;
     private final int PORT_NUMBER;
     private final String DIR_PATH;
     private final File MAIN_DIR;
@@ -17,26 +19,30 @@ public class Server {
         this.PORT_NUMBER = port_number;
         this.DIR_PATH = dir_path;
         this.MAIN_DIR = new File(DIR_PATH);
+        try {
+            serverSocket = new ServerSocket(PORT_NUMBER, 1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void startServer() throws IOException {
-        System.out.println("Starting server...");
-        serverSocket = new ServerSocket(PORT_NUMBER, 1);
+    public void sync() throws IOException {
+        System.out.println("Start sync server on port " + serverSocket.getLocalPort());
         while(true) {
             socket = serverSocket.accept();
-            System.out.println("Listening to the client...");
+            System.out.println("Client connected");
+            System.out.println("Sync with client " + socket.getInetAddress().toString() + ":" + PORT_NUMBER);
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
+            din = new DataInputStream(socket.getInputStream());
+            dout = new DataOutputStream(socket.getOutputStream());
 
-            DataInputStream din = new DataInputStream(socket.getInputStream());
-            DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
-
-            FileOperation fileOperation = new FileOperation(/*dout, din*/);
+            FileOperation fileOperation = new FileOperation(dout, din);
 
             ArrayList<String> serverFilesPaths = fileOperation.getAllFilesPaths(MAIN_DIR);
             int amountOfFiles = serverFilesPaths.size();
             dout.write(amountOfFiles);
-            fileOperation.sendPathsArray(serverFilesPaths, dout);
+            fileOperation.sendPathsArray(serverFilesPaths);
 
             for(String filePath : serverFilesPaths) {
                 dout.writeLong(new File(filePath).lastModified());
@@ -46,9 +52,9 @@ public class Server {
             int pathsToReceiveSize = din.readInt();
             int pathsToDeleteSize = din.readInt();
             System.out.println(pathsToSendSize + " " + pathsToReceiveSize + " " + pathsToDeleteSize);
-            ArrayList<String> clientFilesPathsToSend = fileOperation.receivePathsArray(pathsToSendSize, din);
-            ArrayList<String> clientFilesPathsToReceive = fileOperation.receivePathsArray(pathsToReceiveSize, din);
-            ArrayList<String> serverFilesPathsToDelete = fileOperation.receivePathsArray(pathsToDeleteSize, din);
+            ArrayList<String> clientFilesPathsToSend = fileOperation.receivePathsArray(pathsToSendSize);
+            ArrayList<String> clientFilesPathsToReceive = fileOperation.receivePathsArray(pathsToReceiveSize);
+            ArrayList<String> serverFilesPathsToDelete = fileOperation.receivePathsArray(pathsToDeleteSize);
 
             for(int i = 0; i < pathsToSendSize; i++) {
                 //tmp String path converter
@@ -80,16 +86,41 @@ public class Server {
             fileOperation.deleteFiles(serverFilesPathsToDelete);
             fileOperation.createMissingFolders(clientFilesPathsToSend);
 
+            for(String fileToReceivePath : clientFilesPathsToSend) {
+                if(clientFilesPathsToSend.size() > 0) {
+                    File fileToReceive = new File(fileToReceivePath);
+                    receiveFile(fileToReceive);
+//                    long lastModified = din.readLong();
+//                    fileToReceive.setLastModified(lastModified);
+                }
+            }
+
+            for(String fileToSendPath : clientFilesPathsToReceive) {
+                if(clientFilesPathsToReceive.size() > 0) {
+                    File fileToSend = new File(fileToSendPath);
+                    sendFile(fileToSend);
+//                    dout.writeLong(fileToSend.lastModified());
+                }
+            }
             for(String fileToReceive : clientFilesPathsToSend) {
                 if(clientFilesPathsToSend.size() > 0) {
-                    receiveFile(new File(fileToReceive));
+                    File file = new File(fileToReceive);
+                    din = new DataInputStream(socket.getInputStream());
+                    long lastModified = din.readLong();
+                    file.setLastModified(lastModified);
                 }
             }
             for(String fileToSend : clientFilesPathsToReceive) {
-                if(clientFilesPathsToReceive.size() > 0) {
-                    sendFile(new File(fileToSend));
+                if(clientFilesPathsToSend.size() > 0) {
+                    File file = new File(fileToSend);
+                    long lastModified = file.lastModified();
+                    dout = new DataOutputStream(socket.getOutputStream());
+                    dout.writeLong(lastModified);
                 }
             }
+
+//            File file = new File("./Test-file.txt");
+//            file.setLastModified(din.readLong());
 
             socket.close();
         }
@@ -110,48 +141,59 @@ public class Server {
                 fileInputStream.close();
                 System.out.println("File send successfully");
 
-                reinitConnection();
             } else {
                 throw new FileNotFoundException();
             }
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            reconnect();
         }
     }
 
-    public void receiveFile(File file) throws IOException {
-        byte[] buffer = new byte[socket.getReceiveBufferSize()];
-        OutputStream fileOutputStream = new FileOutputStream(file);
+    public void receiveFile(File file) {
+        try {
+            byte[] buffer = new byte[socket.getReceiveBufferSize()];
+            OutputStream fileOutputStream = new FileOutputStream(file);
 
-        int bytesWrite = 0;
+            int bytesWrite = 0;
 
-        while((bytesWrite = in.read(buffer)) != -1) {
-            fileOutputStream.write(buffer, 0, bytesWrite);
+            while ((bytesWrite = in.read(buffer)) != -1) {
+                fileOutputStream.write(buffer, 0, bytesWrite);
+            }
+            fileOutputStream.flush();
+            fileOutputStream.close();
+            System.out.println("File received successfully");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            reconnect();
         }
-        fileOutputStream.flush();
-        fileOutputStream.close();
-        System.out.println("File received successfully");
-
-
-        reinitConnection();
     }
+
+    private void reconnect() {
+        try {
+            socket.close();
+            out.close();
+            in.close();
+            socket = serverSocket.accept();
+            out = new ObjectOutputStream(socket.getOutputStream());
+            in = new ObjectInputStream(socket.getInputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void stopServer() {
         try {
             in.close();
             out.close();
+            din.close();
+            dout.close();
             socket.close();
             serverSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-    private void reinitConnection() throws IOException {
-        socket.close();
-        in.close();
-        out.close();
-        socket = serverSocket.accept();
-        out = new ObjectOutputStream(socket.getOutputStream());
-        in = new ObjectInputStream(socket.getInputStream());
-    }
-
 }
