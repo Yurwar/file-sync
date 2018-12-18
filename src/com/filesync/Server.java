@@ -12,8 +12,8 @@ public class Server {
     private DataInputStream din;
     private DataOutputStream dout;
     private final int PORT_NUMBER;
-    private final String DIR_PATH;
     private final File MAIN_DIR;
+    private final String DIR_PATH;
 
     public Server(int port_number, String dir_path) {
         this.PORT_NUMBER = port_number;
@@ -27,7 +27,7 @@ public class Server {
     }
 
     public void sync() throws IOException {
-        System.out.println("Start sync server on port " + serverSocket.getLocalPort());
+        System.out.println("Start server on port " + serverSocket.getLocalPort());
         while(true) {
             socket = serverSocket.accept();
             System.out.println("Client connected");
@@ -51,7 +51,7 @@ public class Server {
             int pathsToSendSize = din.readInt();
             int pathsToReceiveSize = din.readInt();
             int pathsToDeleteSize = din.readInt();
-            System.out.println(pathsToSendSize + " " + pathsToReceiveSize + " " + pathsToDeleteSize);
+//            System.out.println(pathsToSendSize + " " + pathsToReceiveSize + " " + pathsToDeleteSize);
             ArrayList<String> clientFilesPathsToSend = fileOperation.receivePathsArray(pathsToSendSize);
             ArrayList<String> clientFilesPathsToReceive = fileOperation.receivePathsArray(pathsToReceiveSize);
             ArrayList<String> serverFilesPathsToDelete = fileOperation.receivePathsArray(pathsToDeleteSize);
@@ -77,14 +77,14 @@ public class Server {
                 //
             }
 
-            System.out.println("Files paths to delete: ");
-            System.out.println(serverFilesPathsToDelete);
-            for(String filePath : serverFilesPathsToDelete) {
-                System.out.println(filePath);
-            }
-
+            fileOperation.printArray(serverFilesPathsToDelete, "Files to delete from server");
             fileOperation.deleteFiles(serverFilesPathsToDelete);
+
             fileOperation.createMissingFolders(clientFilesPathsToSend);
+
+            if(clientFilesPathsToSend.size() == 0 && clientFilesPathsToReceive.size() == 0) {
+                System.out.println("All files is up-to-date");
+            }
 
             for(String fileToReceivePath : clientFilesPathsToSend) {
                 if(clientFilesPathsToSend.size() > 0) {
@@ -117,6 +117,8 @@ public class Server {
             }
 
             socket.close();
+            System.out.println("Synchronization completed successfully");
+            System.out.println("Client disconnected\n");
         }
     }
 
@@ -133,8 +135,8 @@ public class Server {
                 }
                 out.flush();
                 fileInputStream.close();
-                System.out.println("File send successfully");
 
+                System.out.println("File " + file.toString() + " send successfully");
             } else {
                 throw new FileNotFoundException();
             }
@@ -157,7 +159,8 @@ public class Server {
             }
             fileOutputStream.flush();
             fileOutputStream.close();
-            System.out.println("File received successfully");
+
+            System.out.println("File " + file.toString() + " received successfully");
         } catch (IOException e) {
             e.printStackTrace();
         } finally {

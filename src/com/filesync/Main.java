@@ -1,7 +1,6 @@
 package com.filesync;
 
 import java.io.*;
-import java.util.Date;
 
 public class Main {
 

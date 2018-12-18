@@ -161,4 +161,21 @@ public class FileOperation {
         }
         return upToDateFilesPaths;
     }
+
+    public void printArray(ArrayList arrayList) {
+        if(arrayList.size() > 0) {
+            for (Object o : arrayList) {
+                System.out.println(o);
+            }
+        }
+    }
+
+    public void printArray(ArrayList arrayList, String msg) {
+        if(arrayList.size() > 0) {
+            System.out.println(msg);
+            for (Object o : arrayList) {
+                System.out.println(o);
+            }
+        }
+    }
 }
