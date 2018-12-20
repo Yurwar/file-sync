@@ -1,22 +1,11 @@
 package com.filesync;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Scanner;
 
 public class FileOperation {
-    private final DataOutputStream dataOutputStream;
-    private final DataInputStream dataInputStream;
-
-    public FileOperation(DataOutputStream dataOutputStream, DataInputStream dataInputStream) {
-        this.dataOutputStream = dataOutputStream;
-        this.dataInputStream = dataInputStream;
-    }
-
     public void checkToUpdateFromUser(ArrayList<String> clientNotExistingFiles,
                                       ArrayList<String> filesToReceiveFromServer,
                                       ArrayList<String> filesToDeleteFromServer) {
@@ -82,29 +71,6 @@ public class FileOperation {
         }
     }
 
-    public void sendPathsArray(ArrayList<String> pathsArray) {
-        if(!pathsArray.isEmpty()) {
-            for (String path : pathsArray) {
-                try {
-                    dataOutputStream.writeUTF(path);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    public ArrayList<String> receivePathsArray(int arraySize) {
-            ArrayList<String> pathsArray = new ArrayList<>(arraySize);
-            for (int i = 0; i < arraySize; i++) {
-                try {
-                    pathsArray.add(i, dataInputStream.readUTF());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            return pathsArray;
-    }
     public void deleteFiles(ArrayList<String> filesPathsToDelete) {
         File fileToDelete;
         for(String filePath : filesPathsToDelete) {
