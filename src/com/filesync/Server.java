@@ -37,8 +37,7 @@ public class Server {
             ArrayList<String> clientFilesPathsToReceive = connection.receivePathsArray(pathsToReceiveSize);
             ArrayList<String> serverFilesPathsToDelete = connection.receivePathsArray(pathsToDeleteSize);
 
-            System.out.println("Files to delete from server");
-            fileOperation.printArray(serverFilesPathsToDelete);
+            fileOperation.printArray(serverFilesPathsToDelete, "Files to delete from server");
             fileOperation.deleteFiles(serverFilesPathsToDelete);
 
             fileOperation.createMissingFolders(clientFilesPathsToSend);

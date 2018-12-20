@@ -30,12 +30,22 @@ class FileOperation {
     }
 
     void createMissingFolders(ArrayList<String> filesToReceive) {
-        String folderPath;
-        for(String fileToRecieve : filesToReceive) {
-            folderPath = fileToRecieve.substring(0, fileToRecieve.lastIndexOf("/"));
-            File folder = new File(folderPath);
-            if(!folder.exists()) {
-                folder.mkdirs();
+        if(filesToReceive.size() > 0) {
+            for (String fileToReceive : filesToReceive) {
+                File folder;
+                if(fileToReceive.contains("/")) {
+                    String folderPath = fileToReceive.substring(0, fileToReceive.lastIndexOf("/"));
+                    folder = new File(folderPath);
+                    if (!folder.exists()) {
+                        folder.mkdirs();
+                    }
+                } else if (fileToReceive.contains("\\")) {
+                    String folderPath = fileToReceive.substring(0, fileToReceive.lastIndexOf("\\"));
+                    folder = new File(folderPath);
+                    if (!folder.exists()) {
+                        folder.mkdirs();
+                    }
+                }
             }
         }
     }
@@ -132,8 +142,9 @@ class FileOperation {
         return upToDateFilesPaths;
     }
 
-    void printArray(ArrayList arrayList) {
+    void printArray(ArrayList arrayList, String msg) {
         if(arrayList.size() > 0) {
+            System.out.println(msg);
             for (Object o : arrayList) {
                 System.out.println(o);
             }

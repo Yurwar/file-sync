@@ -10,7 +10,7 @@ public class Main {
             Client client = new Client(args[1], 49150, args[2]);
             client.sync();
         } else {
-            System.err.println("Incorrect arguments, please use \"-c\" to start client or \"-s\" to start server");
+            System.err.println("Incorrect arguments, please use \"-c [SERVER_IP_ADDR] ./[FOLDER_TO_SYNC_PATH]\" to start client or \"-s ./[FOLDER_TO_SYNC_PATH]\" to start server");
             System.exit(1);
         }
     }
