@@ -37,27 +37,6 @@ public class Server {
             ArrayList<String> clientFilesPathsToReceive = connection.receivePathsArray(pathsToReceiveSize);
             ArrayList<String> serverFilesPathsToDelete = connection.receivePathsArray(pathsToDeleteSize);
 
-            for (int i = 0; i < pathsToSendSize; i++) {
-                //tmp String path converter
-                String tmpPath = clientFilesPathsToSend.get(i).replaceAll("Client", "Server");
-                clientFilesPathsToSend.set(i, tmpPath);
-                //
-            }
-
-            for (int i = 0; i < pathsToReceiveSize; i++) {
-                //tmp String path converter
-                String tmpPath = clientFilesPathsToReceive.get(i).replaceAll("Client", "Server");
-                clientFilesPathsToReceive.set(i, tmpPath);
-                //
-            }
-
-            for (int i = 0; i < pathsToDeleteSize; i++) {
-                //tmp String path converter
-                String tmpPath = serverFilesPathsToDelete.get(i).replaceAll("Client", "Server");
-                serverFilesPathsToDelete.set(i, tmpPath);
-                //
-            }
-
             System.out.println("Files to delete from server");
             fileOperation.printArray(serverFilesPathsToDelete);
             fileOperation.deleteFiles(serverFilesPathsToDelete);

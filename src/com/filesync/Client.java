@@ -25,12 +25,8 @@ public class Client {
 
             for (int i = 0; i < amountOfFiles; i++) {
                 serverFilesLastModified.add(i, connection.readLong());
-                //tmp string path converter
-                String tmpPath = serverFilesPaths.get(i).replaceAll("Server", "Client");
-                clientFilesPaths.add(tmpPath);
-                //
+                clientFilesPaths.add(serverFilesPaths.get(i));
             }
-
 
             for (String clientFilePath : clientFilesPaths) {
                 clientFilesLastModified.add(new File(clientFilePath).lastModified());
