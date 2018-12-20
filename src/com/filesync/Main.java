@@ -1,10 +1,8 @@
 package com.filesync;
 
-import java.io.*;
-
 public class Main {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         if(args[0].equals("-s")) {
             Server server = new Server(49150, args[1]);
             server.sync();

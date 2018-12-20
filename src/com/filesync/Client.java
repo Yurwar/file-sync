@@ -1,29 +1,18 @@
 package com.filesync;
 
 import java.io.*;
-import java.net.*;
 import java.util.ArrayList;
 
 public class Client {
-    private Socket socket;
-    private final String DIR_PATH;
     private final File MAIN_DIR;
     private Connection connection;
 
     public Client(String serverAddr, int port_number, String dir_path) {
-        this.DIR_PATH = dir_path;
-        this.MAIN_DIR = new File(DIR_PATH);
-        try {
-            socket = new Socket(serverAddr, port_number);
-            if (socket.isConnected()) {
-                System.out.println("Connected to server on address " + socket.getInetAddress() + ":" + socket.getPort());
-            }
-            connection = new Connection(socket, serverAddr, port_number);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        this.MAIN_DIR = new File(dir_path);
+        this.connection = new Connection(serverAddr, port_number);
     }
-    public void sync() {
+
+    void sync() {
         try {
             FileOperation fileOperation = new FileOperation();
 
@@ -38,8 +27,8 @@ public class Client {
                 serverFilesLastModified.add(i, connection.readLong());
                 //tmp string path converter
                 String tmpPath = serverFilesPaths.get(i).replaceAll("Server", "Client");
-                //
                 clientFilesPaths.add(tmpPath);
+                //
             }
 
 
@@ -47,7 +36,6 @@ public class Client {
                 clientFilesLastModified.add(new File(clientFilePath).lastModified());
             }
 
-            //Checking for update
             ArrayList<String> clientNotExistingFilesPaths = fileOperation.getNotExistingFilesPaths(clientFilesPaths,
                     clientFilesLastModified);
 
@@ -92,34 +80,14 @@ public class Client {
                     connection.receiveFile(fileToReceive);
                 }
             }
-            for(String fileToSendPath : clientFilesPathsToSend) {
-                if (clientFilesPathsToSend.size() > 0) {
-                    File file = new File(fileToSendPath);
-                    long lastModified = file.lastModified();
-                    connection.sendMetadata(lastModified);
-                }
-            }
-            for(String fileToReceivePath : clientFilesPathsToReceive) {
-                if(clientFilesPathsToReceive.size() > 0) {
-                    File file = new File(fileToReceivePath);
-                    long lastModified = connection.receiveMetadata();
-                    file.setLastModified(lastModified);
-                }
-            }
+            connection.sendMetadata(clientFilesPathsToSend);
+            connection.receiveMetadata(clientFilesPathsToReceive);
 
             System.out.println("Synchronization completed successfully");
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            stopClient();
-        }
-    }
-
-    public void stopClient() {
-        try {
-            socket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+            connection.stopConnection();
         }
     }
 }

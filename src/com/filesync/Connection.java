@@ -5,7 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
-public class Connection {
+class Connection {
     private Socket socket;
     private ServerSocket serverSocket;
     private ObjectOutputStream out;
@@ -15,29 +15,28 @@ public class Connection {
     private String serverAddr;
     private int PORT_NUMBER;
 
-    public Connection(Socket socket, String serverAddr, int PORT_NUMBER) {
+    Connection(String serverAddr, int PORT_NUMBER) {
         this.serverAddr = serverAddr;
-        this.socket = socket;
         this.PORT_NUMBER = PORT_NUMBER;
         try {
+            this.socket = new Socket(serverAddr, PORT_NUMBER);
             this.out = new ObjectOutputStream(socket.getOutputStream());
             this.in = new ObjectInputStream(socket.getInputStream());
             this.dout = new DataOutputStream(socket.getOutputStream());
             this.din = new DataInputStream(socket.getInputStream());
+            if (socket.isConnected()) {
+                System.out.println("Connected to server on address " + socket.getInetAddress() + ":" + socket.getPort());
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
     }
-    public Connection(ServerSocket serverSocket, Socket socket, int PORT_NUMBER) {
-        this.serverSocket = serverSocket;
-        this.socket = socket;
+
+    Connection(int PORT_NUMBER) {
         this.PORT_NUMBER = PORT_NUMBER;
         try {
-            this.out = new ObjectOutputStream(socket.getOutputStream());
-            this.in = new ObjectInputStream(socket.getInputStream());
-            this.dout = new DataOutputStream(socket.getOutputStream());
-            this.din = new DataInputStream(socket.getInputStream());
+            this.serverSocket = new ServerSocket(PORT_NUMBER, 1);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -64,6 +63,7 @@ public class Connection {
             e.printStackTrace();
         }
     }
+
     private void closeConnection() {
         try {
             socket.close();
@@ -74,14 +74,28 @@ public class Connection {
         }
     }
 
+    void stopConnection() {
+        try {
+            if(serverSocket != null) {
+                serverSocket.close();
+            }
+            socket.close();
+            out.close();
+            in.close();
+            dout.close();
+            din.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-    public void sendFile(File file) {
+    void sendFile(File file) {
         try {
             if(file.exists()) {
                 byte[] buffer = new byte[socket.getSendBufferSize()];
                 InputStream fileInputStream = new FileInputStream(file);
 
-                int bytesRead = 0;
+                int bytesRead;
 
                 while ((bytesRead = fileInputStream.read(buffer)) != -1) {
                     out.write(buffer, 0, bytesRead);
@@ -100,12 +114,12 @@ public class Connection {
         }
     }
 
-    public void receiveFile(File file) {
+    void receiveFile(File file) {
         try {
             byte[] buffer = new byte[socket.getReceiveBufferSize()];
             OutputStream fileOutputStream = new FileOutputStream(file);
 
-            int bytesWrite = 0;
+            int bytesWrite;
 
             while ((bytesWrite = in.read(buffer)) != -1) {
                 fileOutputStream.write(buffer, 0, bytesWrite);
@@ -121,7 +135,7 @@ public class Connection {
         }
     }
 
-    public void sendPathsArray(ArrayList<String> pathsArray) {
+    void sendPathsArray(ArrayList<String> pathsArray) {
         if(!pathsArray.isEmpty()) {
             for (String path : pathsArray) {
                 try {
@@ -133,7 +147,7 @@ public class Connection {
         }
     }
 
-    public ArrayList<String> receivePathsArray(int arraySize) {
+    ArrayList<String> receivePathsArray(int arraySize) {
         ArrayList<String> pathsArray = new ArrayList<>(arraySize);
         for (int i = 0; i < arraySize; i++) {
             try {
@@ -145,24 +159,33 @@ public class Connection {
         return pathsArray;
     }
 
-    private void reconnect() {
-        closeConnection();
-        connect();
+    void sendMetadata(ArrayList<String> filesPaths) {
+        for(String filePath : filesPaths) {
+            if (filesPaths.size() > 0) {
+                File file = new File(filePath);
+                long lastModified = file.lastModified();
+                sendData(lastModified);
+            }
+        }
     }
 
-    public int readInt() throws IOException {
-        return din.readInt();
+    void receiveMetadata(ArrayList<String> filesPaths) {
+        for (String filePath : filesPaths) {
+            if (filesPaths.size() > 0) {
+                File file = new File(filePath);
+                try {
+                    long lastModified = receiveData();
+                    if (!file.setLastModified(lastModified)) {
+                        System.err.println("Can not set last modified time\n");
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
-    public long readLong() throws IOException {
-        return din.readLong();
-    }
-    public void writeInt(int value) throws IOException {
-        dout.writeInt(value);
-    }
-    public void writeLong(long value) throws IOException {
-        dout.writeLong(value);
-    }
-    public void sendMetadata(long value) {
+
+    private void sendData(long value) {
         try {
             dout = new DataOutputStream(socket.getOutputStream());
             writeLong(value);
@@ -170,9 +193,46 @@ public class Connection {
             e.printStackTrace();
         }
     }
-    public long receiveMetadata() throws IOException {
+
+    private long receiveData() throws IOException {
         din = new DataInputStream(socket.getInputStream());
-        long value = readLong();
-        return value;
+        return readLong();
+    }
+
+    private void reconnect() {
+        closeConnection();
+        connect();
+    }
+
+    int readInt() throws IOException {
+        return din.readInt();
+    }
+
+    long readLong() throws IOException {
+        return din.readLong();
+    }
+
+    void writeInt(int value) throws IOException {
+        dout.writeInt(value);
+    }
+
+    void writeLong(long value) throws IOException {
+        dout.writeLong(value);
+    }
+
+    void acceptSocket() {
+        if(serverSocket != null) {
+            try {
+                this.socket = serverSocket.accept();
+                System.out.println("Client connected");
+                System.out.println("Sync with client " + socket.getInetAddress().toString() + ":" + serverSocket.getLocalPort());
+                this.out = new ObjectOutputStream(socket.getOutputStream());
+                this.in = new ObjectInputStream(socket.getInputStream());
+                this.dout = new DataOutputStream(socket.getOutputStream());
+                this.din = new DataInputStream(socket.getInputStream());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

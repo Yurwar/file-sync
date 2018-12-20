@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Scanner;
 
-public class FileOperation {
-    public void checkToUpdateFromUser(ArrayList<String> clientNotExistingFiles,
+class FileOperation {
+    void checkToUpdateFromUser(ArrayList<String> clientNotExistingFiles,
                                       ArrayList<String> filesToReceiveFromServer,
                                       ArrayList<String> filesToDeleteFromServer) {
         if(clientNotExistingFiles.isEmpty()) {
@@ -29,7 +29,7 @@ public class FileOperation {
         }
     }
 
-    public void createMissingFolders(ArrayList<String> filesToReceive) {
+    void createMissingFolders(ArrayList<String> filesToReceive) {
         String folderPath;
         for(String fileToRecieve : filesToReceive) {
             folderPath = fileToRecieve.substring(0, fileToRecieve.lastIndexOf("/"));
@@ -42,22 +42,24 @@ public class FileOperation {
 
     private void _getAllFilesPaths(File mainFolder, ArrayList<String> filesPaths) {
         File[] folderEntries = mainFolder.listFiles();
-        for(File entry : folderEntries) {
-            if(entry.isDirectory()) {
-                _getAllFilesPaths(entry, filesPaths);
-            } else {
-                filesPaths.add(entry.getPath());
+        if(folderEntries != null) {
+            for (File entry : folderEntries) {
+                if (entry.isDirectory()) {
+                    _getAllFilesPaths(entry, filesPaths);
+                } else {
+                    filesPaths.add(entry.getPath());
+                }
             }
         }
     }
 
-    public ArrayList<String> getAllFilesPaths(File mainFolder) {
+    ArrayList<String> getAllFilesPaths(File mainFolder) {
         ArrayList<String> filesPaths = new ArrayList<>();
         _getAllFilesPaths(mainFolder, filesPaths);
         return filesPaths;
     }
 
-    public void addMissingClientFiles(File folderPath,
+    void addMissingClientFiles(File folderPath,
                                       ArrayList<String> clientFilesPathsToSend,
                                       ArrayList<String> clientFilesPathsToReceive,
                                       ArrayList<String> upToDateFilesPaths) {
@@ -71,17 +73,19 @@ public class FileOperation {
         }
     }
 
-    public void deleteFiles(ArrayList<String> filesPathsToDelete) {
+    void deleteFiles(ArrayList<String> filesPathsToDelete) {
         File fileToDelete;
         for(String filePath : filesPathsToDelete) {
             fileToDelete = new File(filePath);
             if(!fileToDelete.delete()) {
                 System.out.println("Can't delete file " + filePath);
+            } else {
+                System.out.println("File " + filePath + " deleted successfully");
             }
         }
     }
 
-    public ArrayList<String> getNotExistingFilesPaths(ArrayList<String> filesPaths,
+    ArrayList<String> getNotExistingFilesPaths(ArrayList<String> filesPaths,
                                                       ArrayList<Long> filesLastModiefied) {
         ArrayList<String> notExistingFilesPaths = new ArrayList<>();
         for(int i = 0; i < filesPaths.size(); i++) {
@@ -92,7 +96,7 @@ public class FileOperation {
         return notExistingFilesPaths;
     }
 
-    public ArrayList<String> getFilesPathsToSend(ArrayList<String> filesPaths,
+    ArrayList<String> getFilesPathsToSend(ArrayList<String> filesPaths,
                                                  ArrayList<Long> senderFilesLastModified,
                                                  ArrayList<Long> receiverFilesLastModified) {
         ArrayList<String> filesPathsToSend = new ArrayList<>();
@@ -104,7 +108,7 @@ public class FileOperation {
         return filesPathsToSend;
     }
 
-    public ArrayList<String> getFilesPathsToReceive(ArrayList<String> filesPaths,
+    ArrayList<String> getFilesPathsToReceive(ArrayList<String> filesPaths,
                                                     ArrayList<Long> senderFilesLastModified,
                                                     ArrayList<Long> receiverFilesLastModified) {
         ArrayList<String> filesPathsToReceive = new ArrayList<>();
@@ -116,7 +120,7 @@ public class FileOperation {
         return filesPathsToReceive;
     }
 
-    public ArrayList<String> getUpToDateFilesPaths(ArrayList<String> filesPaths,
+    ArrayList<String> getUpToDateFilesPaths(ArrayList<String> filesPaths,
                                                    ArrayList<Long> senderFilesLastModified,
                                                    ArrayList<Long> receiverFilesLastModified) {
         ArrayList<String> upToDateFilesPaths = new ArrayList<>();
@@ -128,17 +132,8 @@ public class FileOperation {
         return upToDateFilesPaths;
     }
 
-    public void printArray(ArrayList arrayList) {
+    void printArray(ArrayList arrayList) {
         if(arrayList.size() > 0) {
-            for (Object o : arrayList) {
-                System.out.println(o);
-            }
-        }
-    }
-
-    public void printArray(ArrayList arrayList, String msg) {
-        if(arrayList.size() > 0) {
-            System.out.println(msg);
             for (Object o : arrayList) {
                 System.out.println(o);
             }
